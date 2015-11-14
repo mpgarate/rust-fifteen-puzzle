@@ -1,0 +1,4 @@
+[package]
+name = "fifteen_puzzle"
+version = "0.1.0"
+authors = ["michael <mpgarate@gmail.com>"]
