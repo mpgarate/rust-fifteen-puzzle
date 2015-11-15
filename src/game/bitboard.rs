@@ -1,4 +1,5 @@
 use game::position::Position;
+use std::fmt;
 
 #[allow(dead_code)]
 const BOARD_STATE_EMPTY: u64 = 0x123456789ABCDEF0;
@@ -36,6 +37,18 @@ impl BitBoard {
     let masked_data = self.data & (0xF << offset);
 
     ((masked_data >> offset as u64) & 0xF) as u8
+  }
+
+  pub fn swap(&self, p1: Position, p2: Position) -> BitBoard {
+    let v1 = self.get(p1);
+    self.set(p1, self.get(p2))
+      .set(p2, v1)
+  }
+}
+
+impl fmt::Display for BitBoard {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "({:X})", self.data)
   }
 }
 
@@ -88,6 +101,27 @@ mod tests {
             value,
             b.get(Position::new(row, col))
           );
+        }
+      }
+    }
+  }
+
+  #[test]
+  fn swap_two_valid_positions() {
+    let b1 = BitBoard::new();
+
+    for row1 in 0..4 {
+      for col1 in 0..4 {
+        for row2 in 0..4 {
+          for col2 in 0..4 {
+            let p1 = Position::new(row1, col1);
+            let p2 = Position::new(row2, col2);
+
+            let b2 = b1.swap(p1, p2);
+            
+            assert_eq!(b1.get(p1), b2.get(p2));
+            assert_eq!(b2.get(p1), b1.get(p2));
+          }
         }
       }
     }
