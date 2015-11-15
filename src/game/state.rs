@@ -66,4 +66,15 @@ mod tests {
       _ => panic!(),
     }
   }
+
+  #[test]
+  fn move_space_illegal_direction() {
+    let s: Option<GameState> = GameState::new()
+      .move_space(MoveDirection::Down);
+
+    match s {
+      Some(_) => panic!(),
+      None => (),
+    }
+  }
 }
