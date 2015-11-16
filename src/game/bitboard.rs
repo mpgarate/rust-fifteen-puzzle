@@ -51,6 +51,11 @@ impl fmt::Display for BitBoard {
     write!(f, "({:X})", self.data)
   }
 }
+impl PartialEq for BitBoard {
+  fn eq(&self, other: &BitBoard) -> bool {
+    self.data == other.data
+  }
+}
 
 #[cfg(test)]
 mod tests {

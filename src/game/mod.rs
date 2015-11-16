@@ -3,6 +3,6 @@ pub use self::position::Position;
 pub use self::state::GameState;
 
 mod bitboard;
-mod position;
-mod state;
+pub mod position;
+pub mod state;
 

@@ -37,6 +37,26 @@ impl GameState {
       _ => None
     }
   }
+
+  // TODO: consider a functional/recursive style
+  pub fn move_spaces(&self, mut move_directions:  Vec<MoveDirection>) -> Option<GameState> {
+    let d1 = move_directions.remove(0);
+    let mut state = self.move_space(d1);
+
+    for m in move_directions.into_iter() {
+      state = match state {
+        Some(s) => s.move_space(m),
+        None => None,
+      }
+    }
+
+    state
+  }
+}
+impl PartialEq for GameState {
+  fn eq(&self, other: &GameState) -> bool {
+    self.board == other.board && self.free_space == other.free_space
+  }
 }
 
 #[cfg(test)]
@@ -76,5 +96,27 @@ mod tests {
       Some(_) => panic!(),
       None => (),
     }
+  }
+
+  #[test]
+  fn move_spaces() {
+    let game_state = GameState::new()
+      .move_spaces(
+        vec![
+          MoveDirection::Left,
+          MoveDirection::Left,
+          MoveDirection::Up,
+        ]
+      );
+
+    let expected = match GameState::new().move_space(MoveDirection::Left) {
+      Some(g1) => match g1.move_space(MoveDirection::Left) {
+        Some(g2) => g2.move_space(MoveDirection::Up),
+        None => panic!(),
+      },
+      None => panic!(),
+    };
+
+    assert!(expected == game_state);
   }
 }
