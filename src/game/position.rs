@@ -6,6 +6,7 @@ const MAX_ROW_INDEX: u8 = 3;
 const MAX_COL_INDEX: u8 = 3;
 
 #[allow(dead_code)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum MoveDirection {
   Left,
   Right,

@@ -52,7 +52,33 @@ impl GameState {
 
     state
   }
+
+  pub fn get_score(&self) -> u32 {
+    let mut score = 0;
+
+    for row in 0..4 {
+      for col in 0..4 {
+        let p = Position::new(row, col);
+
+        if p == self.free_space {
+          continue;
+        }
+
+        let val = self.board.get(p) - 1;
+
+        let target_col = val % 4;
+        let target_row = (val - target_col) / 4;
+        
+        let distance = (target_row as i32 - row as i32).abs() + (target_col as i32 - col as i32).abs();
+
+        score += distance
+      }
+    }
+
+    score as u32
+  }
 }
+
 impl PartialEq for GameState {
   fn eq(&self, other: &GameState) -> bool {
     self.board == other.board && self.free_space == other.free_space
@@ -119,4 +145,5 @@ mod tests {
 
     assert!(expected == game_state);
   }
+
 }
