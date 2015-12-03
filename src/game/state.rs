@@ -2,12 +2,15 @@ use game::bitboard::BitBoard;
 use game::position::Position;
 use game::position::MoveDirection;
 
+use std::fmt;
+
 #[allow(dead_code)]
 const DEFAULT_FREE_SPACE_ROW: u8 = 3;
 #[allow(dead_code)]
 const DEFAULT_FREE_SPACE_COL: u8 = 3;
 
 #[allow(dead_code)]
+#[derive(Eq, Hash, Clone)]
 pub struct GameState {
   board: BitBoard,
   free_space: Position,
@@ -82,6 +85,12 @@ impl GameState {
 impl PartialEq for GameState {
   fn eq(&self, other: &GameState) -> bool {
     self.board == other.board && self.free_space == other.free_space
+  }
+}
+
+impl fmt::Display for GameState {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "{}", self.board)
   }
 }
 

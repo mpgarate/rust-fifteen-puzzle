@@ -5,6 +5,7 @@ use std::fmt;
 const BOARD_STATE_EMPTY: u64 = 0x123456789ABCDEF0;
 
 #[allow(dead_code)]
+#[derive(Eq, Hash, Clone)]
 pub struct BitBoard {
   data: u64,
 }

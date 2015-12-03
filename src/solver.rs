@@ -3,6 +3,7 @@ use game::position::MoveDirection;
 
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+use std::collections::HashSet;
 
 pub struct SolverState {
   game: GameState,
@@ -23,6 +24,16 @@ impl SolverState {
     vm.push(direction);
     let v = vm;
     v
+  }
+
+  pub fn should_skip(&self, direction: MoveDirection) -> bool {
+      match (direction, self.steps.last()) {
+        (MoveDirection::Left, Some(&MoveDirection::Right)) => true,
+        (MoveDirection::Right, Some(&MoveDirection::Left)) => true,
+        (MoveDirection::Up, Some(&MoveDirection::Down)) => true,
+        (MoveDirection::Down, Some(&MoveDirection::Up)) => true,
+        _ => false
+      }
   }
 }
 
@@ -61,8 +72,82 @@ impl Ord for SolverState {
   }
 }
 
+pub fn depth_limited_dfs(state: SolverState, mut depth: u64) -> Option<Vec<MoveDirection>> {
+  let move_directions = [
+    MoveDirection::Left,
+    MoveDirection::Right,
+    MoveDirection::Up,
+    MoveDirection::Down,
+  ];
+
+  if depth == 0 && state.game.is_solved() {
+    println!("steps!");
+    Some(state.steps)
+  } else if depth > 0 {
+    for m in &move_directions {
+
+      match state.should_skip(m.clone()) {
+        true => continue,
+        false => ()
+      }
+
+      match state.game.move_space(m.clone()) {
+        Some(gs) => {
+          let result = depth_limited_dfs(
+            SolverState::new(
+              gs,
+              state.steps_with(m.clone())
+            ),
+            depth - 1
+          );
+
+          match result {
+            Some(steps) => { return Some(steps) },
+            None => ()
+          }
+        }
+        None => ()
+      }
+    }
+    None
+  } else {
+    None
+  }
+}
+
+pub fn solve_idfs(state: GameState) -> Option<Vec<MoveDirection>> {
+  let mut depth = 0;
+
+  loop {
+    if depth % 10 == 0 {
+      ()
+    }
+
+    println!("depth {}", depth);
+
+    if (depth > 100000) {
+      return None;
+    }
+    match depth_limited_dfs(
+      SolverState::new(
+        state.clone(),
+        vec![],
+      ),
+      depth
+    ) {
+      Some(steps) => {
+        println!("got steps!");
+        return Some(steps);
+      }
+      None => ()
+    }
+
+    depth += 1
+  }
+}
+
 #[allow(dead_code)]
-pub fn solve(state: GameState) -> Option<Vec<MoveDirection>> {
+pub fn solve_guided(state: GameState) -> Option<Vec<MoveDirection>> {
 
   if state.is_solved() {
     return Some(vec![]);
@@ -75,48 +160,47 @@ pub fn solve(state: GameState) -> Option<Vec<MoveDirection>> {
     MoveDirection::Right,
   ];
 
-  let mut board_state_heap = BinaryHeap::new();
+  let mut heap = BinaryHeap::new();
 
-  board_state_heap.push(
-    SolverState::new(state, vec![])
+  heap.push(
+    SolverState::new(state.clone(), vec![])
   );
 
-  let mut iterations = 0;
+  let mut visited = HashSet::new();
+  visited.insert(state.clone());
 
   loop {
-    iterations += 1;
 
-    if iterations % 100 == 0 {
-      println!("{} iterations", iterations);
-    }
-
-    let current_state = match board_state_heap.pop() {
+    let current_state = match heap.pop() {
       Some(s) => s,
       None => break
     };
 
     if current_state.is_solved() {
-      //println!("Solved!");
+      println!("Solved!");
 
       for s in current_state.steps.iter() {
-        //println!("step: {:?}", s);
+        println!("step: {:?}", s);
       }
 
       return Some(current_state.steps);
+    } else {
+      visited.insert(current_state.game.clone());
     }
 
     for direction in &move_directions {
-      match (direction, current_state.steps.last()) {
-        (&MoveDirection::Left, Some(&MoveDirection::Right)) => continue,
-        (&MoveDirection::Right, Some(&MoveDirection::Left)) => continue,
-        (&MoveDirection::Up, Some(&MoveDirection::Down)) => continue,
-        (&MoveDirection::Down, Some(&MoveDirection::Up)) => continue,
-        _ => ()
+      match current_state.should_skip(direction.clone()) {
+        true => continue,
+        false => ()
       }
 
       match current_state.game.move_space(direction.clone()) {
-        Some(g) => board_state_heap.push(SolverState::new(g,
-                                                          current_state.steps_with(direction.clone()))),
+        Some(g) => {
+          if !visited.contains(&g) {
+            let s = SolverState::new(g, current_state.steps_with(direction.clone()));
+            heap.push(s);
+          }
+        },
         None => ()
       }
     }
@@ -162,7 +246,7 @@ mod tests {
 
   #[test]
   fn solve_already_solved() {
-    match solve(GameState::new()) {
+    match solve_guided(GameState::new()) {
       Some(path) => assert_eq!(0, path.len()),
       None => panic!()
     }
@@ -170,18 +254,86 @@ mod tests {
 
   #[test]
   fn solve_simple_case() {
+    println!("simple case...");
     let game_state = GameState::new()
       .move_spaces(
         vec![
-          MoveDirection::Left,
+          MoveDirection::Up,
           MoveDirection::Left,
           MoveDirection::Up,
         ]
       );
 
     match game_state {
-      Some(g) => match solve(g) {
+      Some(g) => match solve_idfs(g) {
         Some(path) => assert_eq!(3, path.len()),
+        None => panic!(),
+      },
+      None => panic!(),
+    };
+  }
+
+  #[test]
+  fn solve_medium_case() {
+    let game_state = GameState::new()
+      .move_spaces(
+        vec![
+          MoveDirection::Left,
+          MoveDirection::Left,
+          MoveDirection::Up,
+          MoveDirection::Up,
+          MoveDirection::Up,
+          MoveDirection::Left,
+          MoveDirection::Down,
+          MoveDirection::Down,
+          MoveDirection::Right,
+          MoveDirection::Right,
+          MoveDirection::Up,
+          MoveDirection::Right,
+          MoveDirection::Up,
+        ]
+      );
+
+    match game_state {
+      Some(g) => match solve_idfs(g) {
+        Some(path) => assert_eq!(13, path.len()),
+        None => panic!(),
+      },
+      None => panic!(),
+    };
+  }
+
+  #[test]
+  fn solve_hard_case() {
+    let game_state = GameState::new()
+      .move_spaces(
+        vec![
+          MoveDirection::Left,
+          MoveDirection::Left,
+          MoveDirection::Up,
+          MoveDirection::Up,
+          MoveDirection::Up,
+          MoveDirection::Left,
+          MoveDirection::Down,
+          MoveDirection::Down,
+          MoveDirection::Right,
+          MoveDirection::Right,
+          MoveDirection::Up,
+          MoveDirection::Right,
+          MoveDirection::Up,
+          MoveDirection::Left,
+          MoveDirection::Left,
+          MoveDirection::Left,
+          MoveDirection::Down,
+          MoveDirection::Right,
+          MoveDirection::Down,
+          MoveDirection::Right,
+        ]
+      );
+
+    match game_state {
+      Some(g) => match solve_idfs(g) {
+        Some(path) => assert_eq!(20, path.len()),
         None => panic!(),
       },
       None => panic!(),

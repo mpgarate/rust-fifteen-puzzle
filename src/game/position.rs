@@ -15,7 +15,7 @@ pub enum MoveDirection {
 }
 
 #[allow(dead_code)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, Hash)]
 pub struct Position {
   row: u8,
   col: u8,
